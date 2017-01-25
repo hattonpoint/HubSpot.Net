@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HubSpot.Net
 {
@@ -9,5 +11,7 @@ namespace HubSpot.Net
         Task DeleteRefreshToken(string token);
         Task<HubSpotAppTokenModel> RefreshAccessToken(string token, string redirectUri);
         Task<HubSpotDealModel> CreateDeal(string token, HubSpotCreateDealModel model);
+        Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset);
+        Task UpdateContact(string apiKey, HubSpotUpdateContactModel model);
     }
 }

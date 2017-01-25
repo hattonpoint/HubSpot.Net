@@ -11,6 +11,7 @@ namespace HubSpot.Net
     public class HubSpotNet : IHubSpotNet
     {
         private const string HubSpotBaseAuthUrl = "https://api.hubapi.com/oauth/v1/";
+        private const string HubSpotBaseApiUrl = "https://api.hubapi.com/";
         private const string HubSpotBaseUrl = "https://api.hubapi.com/";
         private string HubSpotClientId { get; } = System.Configuration.ConfigurationManager.AppSettings["HubSpotClientId"];
 
@@ -112,7 +113,7 @@ namespace HubSpot.Net
         {
             var uri = new UriBuilder(HubSpotBaseUrl + "deals/v1/deal");
             var content = new StringContent(JsonConvert.SerializeObject(model, Formatting.None, new JsonSerializerSettings
-            { NullValueHandling = NullValueHandling.Ignore}), Encoding.UTF8, "application/json");
+            { NullValueHandling = NullValueHandling.Ignore }), Encoding.UTF8, "application/json");
 
             using (var client = new HttpClient())
             {
@@ -131,6 +132,69 @@ namespace HubSpot.Net
                 }
 
                 return dealModel;
+            }
+        }
+
+        public async Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset)
+        {
+            var uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey);
+
+            using (var client = new HttpClient())
+            {
+                var contactsModel = new HubSpotContactsModel();
+                var contactList = new List<HubSpotContactModel>();
+                var responseTimeOffset = DateTime.MaxValue;
+                var firstPass = true;
+
+                while (firstPass || (responseTimeOffset > timeOffset && contactsModel.HasMore))
+                {
+                    // append time and vid offset if not the first pass
+                    if (!firstPass)
+                    {
+                        uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey +
+                            "&vidOffset=" + contactsModel.VidOffset + "&timeOffset=" + contactsModel.TimeOffSet.ToString());
+                    }
+
+                    var response = await client.GetAsync(uri.Uri);
+                    var result = await response.Content.ReadAsStringAsync();
+
+                    contactsModel = JsonConvert.DeserializeObject<HubSpotContactsModel>(result);
+                    
+                    contactList.AddRange(contactsModel.Contacts);//add contacts to response object
+
+                    contactsModel.StatusCode = response.StatusCode;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new HubSpotException(response.StatusCode,
+                            $"HubSpotNet error during deal creation: {contactsModel.Error} : {contactsModel.ErrorDescription}");
+                    }
+
+                    responseTimeOffset = Helpers.ConvertFromUnixTime(contactsModel.TimeOffSet);
+
+                    if (firstPass)
+                        firstPass = false;
+                }
+
+                return contactList;
+            }
+        }
+
+        public async Task UpdateContact(string apiKey, HubSpotUpdateContactModel model)
+        {
+            var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/contact/email/" + model.Email + "/profile?hapikey=" + apiKey);
+
+            var content = new StringContent(JsonConvert.SerializeObject(model, Formatting.None, new JsonSerializerSettings
+            { NullValueHandling = NullValueHandling.Ignore }), Encoding.UTF8, "application/json");
+
+            using (var client = new HttpClient())
+            {
+                var response = await client.PostAsync(uri.Uri, content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HubSpotException(response.StatusCode,
+                        $"HubSpotNet error during deal creation: {response.ReasonPhrase}");
+                }                
             }
         }
     }

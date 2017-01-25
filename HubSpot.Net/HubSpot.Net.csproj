@@ -45,11 +45,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers.cs" />
     <Compile Include="HubSpotAppTokenModel.cs" />
     <Compile Include="HubSpotAuthResponseModel.cs" />
+    <Compile Include="HubSpotContactModel.cs" />
     <Compile Include="HubSpotCreateDealModel.cs" />
     <Compile Include="HubSpotDealModel.cs" />
     <Compile Include="HubSpotException.cs" />
+    <Compile Include="HubSpotIdentityProfileModel.cs" />
     <Compile Include="HubSpotNet.cs" />
     <Compile Include="HubSpotPropertyModel.cs" />
     <Compile Include="HubSpotRefreshTokenInfoModel.cs" />

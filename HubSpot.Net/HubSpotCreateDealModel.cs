@@ -35,4 +35,13 @@ namespace HubSpot.Net
         [JsonProperty("name")]
         public string Name { get; set; }
     }
+
+    public class HubSpotPropertyUpdateModel
+    {
+        [JsonProperty("property")]
+        public string Property { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }        
+    }
 }
