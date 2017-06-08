@@ -1,6 +1,8 @@
 ﻿using HubSpot.Net;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 
 namespace HubSpotNetTests
@@ -40,9 +42,14 @@ namespace HubSpotNetTests
         [TestMethod]
         public async Task TestSomeStuff()
         {
-            var apiKey = "b6485fd4-41b3-406e-b925-a5a99309b68b";
+            var apiKey = "91f0e333-203c-45d1-b2ff-2666d046b981";
 
-            var contacts = await _hubSpot.GetRecentContacts(apiKey, DateTime.Now.AddHours(-1));            
+            var properties = new List<string>();
+            properties.Add("firstname");
+            properties.Add("lastname");
+            properties.Add("email");
+
+            var contacts = await _hubSpot.GetRecentContacts(apiKey, DateTime.Now.AddHours(-6), properties);            
         }
 
         
@@ -78,7 +85,7 @@ namespace HubSpotNetTests
             request.Properties.Add(lastName);
             request.Email = "mike@test.com";
 
-            await _hubSpot.UpdateContact(apiKey, request);
+            //await _hubSpot.UpdateContact(apiKey, request);
         }
     }
 }

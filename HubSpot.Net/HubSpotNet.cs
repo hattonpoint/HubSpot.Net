@@ -5,6 +5,9 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text;
 using System.Net.Http.Headers;
+using Newtonsoft.Json.Linq;
+using System.Collections.Specialized;
+using System.Linq;
 
 namespace HubSpot.Net
 {
@@ -135,9 +138,65 @@ namespace HubSpot.Net
             }
         }
 
-        public async Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset)
+        public async Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset, List<string> properties = null)
         {
-            var uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey);
+            // add an array of query string params that can be iterated through            
+            var uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey + "&propertyMode=value_and_history");
+
+            if(properties != null && properties.Any())
+            {
+                uri.Query = uri.Query.Substring(1) + "&property=" + string.Join("&property=", properties);
+            }
+           
+            using (var client = new HttpClient())
+            {
+                var contactsModel = new HubSpotContactsModel();
+                var contactList = new List<HubSpotContactModel>();
+                var responseTimeOffset = DateTime.MaxValue;
+                var uriOriginalString = uri.Uri.ToString();
+                var uriString = uriOriginalString;
+
+                while (!string.IsNullOrEmpty(uriString))
+                {
+                    var response = await client.GetAsync(uri.Uri);
+                    var result = await response.Content.ReadAsStringAsync();
+                    
+                    contactsModel = JsonConvert.DeserializeObject<HubSpotContactsModel>(result);
+                    
+                    contactList.AddRange(contactsModel.Contacts.Where(c => Helpers.ConvertFromUnixTime(c.AddedAt) >= timeOffset));//check contact timestamp against lastSyncDate
+
+                    contactsModel.StatusCode = response.StatusCode;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new HubSpotException(response.StatusCode,
+                            $"HubSpotNet error during deal creation: {contactsModel.Error} : {contactsModel.ErrorDescription}");
+                    }
+
+                    responseTimeOffset = Helpers.ConvertFromUnixTime(contactsModel.TimeOffSet);
+                    if(responseTimeOffset > DateTime.UtcNow)
+                    {
+                        uriString = uriOriginalString + "&vidOffset=" + contactsModel.VidOffset + "&timeOffset=" + contactsModel.TimeOffSet.ToString();
+                    }
+                    else                    
+                        uriString = string.Empty;                   
+                }
+
+                return contactList;
+            }
+        }
+
+        public async Task<List<HubSpotContactModel>> GetContacts(string apiKey, List<string> properties)
+        {
+            // add an array of query string params that can be iterated through
+            //https://api.hubapi.com/contacts/v1/lists/all/contacts/all?hapikey=b6485fd4-41b3-406e-b925-a5a99309b68b&property=firstname&property=lastname&property=email
+            //iterate through array of prioperties and append to url
+
+            var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/lists/all/contacts/all?hapikey=" + apiKey);
+            foreach (var property in properties)
+            {
+                
+            }
+            
 
             using (var client = new HttpClient())
             {
@@ -146,20 +205,22 @@ namespace HubSpot.Net
                 var responseTimeOffset = DateTime.MaxValue;
                 var firstPass = true;
 
-                while (firstPass || (responseTimeOffset > timeOffset && contactsModel.HasMore))
+                while (firstPass || contactsModel.HasMore)
                 {
                     // append time and vid offset if not the first pass
                     if (!firstPass)
                     {
-                        uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey +
-                            "&vidOffset=" + contactsModel.VidOffset + "&timeOffset=" + contactsModel.TimeOffSet.ToString());
+                        uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/lists/all/contacts/all?hapikey=" + apiKey);                           
                     }
 
                     var response = await client.GetAsync(uri.Uri);
                     var result = await response.Content.ReadAsStringAsync();
 
                     contactsModel = JsonConvert.DeserializeObject<HubSpotContactsModel>(result);
-                    
+
+
+                    //reutrn raw json
+
                     contactList.AddRange(contactsModel.Contacts);//add contacts to response object
 
                     contactsModel.StatusCode = response.StatusCode;
@@ -179,7 +240,7 @@ namespace HubSpot.Net
             }
         }
 
-        public async Task UpdateContact(string apiKey, HubSpotUpdateContactModel model)
+        public async Task UpdateContact(string apiKey, HubSpotUpdateContactModel model, string[] param)
         {
             var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/contact/email/" + model.Email + "/profile?hapikey=" + apiKey);
 
@@ -197,5 +258,26 @@ namespace HubSpot.Net
                 }                
             }
         }
+
+        public async Task UpdateContacts(string apiKey, List<HubSpotUpdateContactModel> model)
+        {
+            var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/contact/batch/?hapikey=" + apiKey);
+
+            var content = new StringContent(JsonConvert.SerializeObject(model.ToArray(), Formatting.None, new JsonSerializerSettings
+            { NullValueHandling = NullValueHandling.Ignore }), Encoding.UTF8, "application/json");
+
+            using (var client = new HttpClient())
+            {
+                var response = await client.PostAsync(uri.Uri, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HubSpotException(response.StatusCode,
+                        $"HubSpotNet error during deal creation: {response.ReasonPhrase}");
+                }
+            }
+
+            throw new NotImplementedException();
+        }        
     }
 }

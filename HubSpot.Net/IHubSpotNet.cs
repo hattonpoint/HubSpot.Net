@@ -11,7 +11,9 @@ namespace HubSpot.Net
         Task DeleteRefreshToken(string token);
         Task<HubSpotAppTokenModel> RefreshAccessToken(string token, string redirectUri);
         Task<HubSpotDealModel> CreateDeal(string token, HubSpotCreateDealModel model);
-        Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset);
-        Task UpdateContact(string apiKey, HubSpotUpdateContactModel model);
+        Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset, List<string> properties = null);
+        Task<List<HubSpotContactModel>> GetContacts(string apiKey, List<string> properties);
+        Task UpdateContact(string apiKey, HubSpotUpdateContactModel model, string[] param);
+        Task UpdateContacts(string apiKey, List<HubSpotUpdateContactModel> model);
     }
 }

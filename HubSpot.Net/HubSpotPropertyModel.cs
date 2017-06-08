@@ -25,16 +25,16 @@ namespace HubSpot.Net
 
     public class HubSpotPropertyVersionModel
     {
-        [JsonProperty("name")]
-        public string Name { get; set; }
+        [JsonProperty("timestamp")]
+        public string Timestamp { get; set; }
 
         [JsonProperty("value")]
         public string Value { get; set; }
 
-        [JsonProperty("source")]
+        [JsonProperty("source-type")]
         public string Source { get; set; }
 
-        [JsonProperty("sourceVid")]
-        public string[] SourceVid { get; set; }
+        [JsonProperty("source-id")]
+        public string SourceId { get; set; }
     }
 }
