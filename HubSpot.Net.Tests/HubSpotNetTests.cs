@@ -54,24 +54,23 @@ namespace HubSpotNetTests
 
         
         [TestMethod]
-        public async Task UpdateContactTest()
+        public async Task BatchUpdateContacts_NewContact_ContactInserted()
         {
-            var apiKey = "b6485fd4-41b3-406e-b925-a5a99309b68b";
-            //var email = ""
+            //this takes a little setup against the api
+            //using the testing framework for verification
+            //assumption is the hubspot account contacts is empty
 
+            //arrange
+            var apiKey = "54a308cc-4048-403c-81d8-a3110bff4743";                                                
 
-            var request = new HubSpotUpdateContactModel();
-
-            var contactEmail = new HubSpotPropertyUpdateModel()
-            {
-                Property = "email",
-                Value = "mike@test.com"
-            };
-
+            var request = new List<HubSpotUpdateContactModel>();
+            var contact1 = new HubSpotUpdateContactModel();
+            contact1.Email = "test@test.com";
+                 
             var firstName = new HubSpotPropertyUpdateModel()
             {
                 Property = "firstname",
-                Value = "Mikey"
+                Value = "Billy"
             };
 
             var lastName = new HubSpotPropertyUpdateModel()
@@ -80,12 +79,60 @@ namespace HubSpotNetTests
                 Value = "Test"
             };
 
-            //request.Properties.Add(contactEmail);
-            request.Properties.Add(firstName);
-            request.Properties.Add(lastName);
-            request.Email = "mike@test.com";
+            var email = new HubSpotPropertyUpdateModel()
+            {
+                Property = "email",
+                Value = "test@test.com"
+            };
 
-            //await _hubSpot.UpdateContact(apiKey, request);
+            contact1.Properties.Add(firstName);
+            contact1.Properties.Add(lastName);
+            contact1.Properties.Add(email);
+
+            request.Add(contact1);            
+
+            //act
+            await _hubSpot.BatchUpdateContactsByEmail(apiKey, request);            
+
+            //assert
+        }
+
+        [TestMethod]
+        public async Task BatchUpdateContacts_UpdateContact()
+        {
+            //assumption here is current hubspot account has no contacts in it
+
+            //arrange
+            var apiKey = "54a308cc-4048-403c-81d8-a3110bff4743";
+            var contact1Email = "mike@test.com";
+
+            ////create the contact
+            var contacts = new List<HubSpotUpdateContactModel>();
+            var contact1 = new HubSpotUpdateContactModel();
+            contact1.Email = contact1Email;
+            var phone = new HubSpotPropertyUpdateModel()
+            {
+                Property = "phone",
+                Value = "303-555-7777"
+            };            
+
+            contact1.Properties.Add(phone);            
+            contacts.Add(contact1);
+
+            ////act
+            await _hubSpot.BatchUpdateContactsByEmail(apiKey, contacts);
+
+            ////change property on contact and update via batch update
+
+
+
+            ////_hubSpot.BatchUpdateContactsByEmail()                                                
+            ////act
+            //await _hubSpot.BatchUpdateContactsByEmail(apiKey, request);
+            //var updatedContacts = await _hubSpot.GetContact(apiKey, contact1Email);
+
+            //assert
+
         }
     }
 }

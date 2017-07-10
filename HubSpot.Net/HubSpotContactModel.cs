@@ -50,6 +50,7 @@ namespace HubSpot.Net
         [JsonProperty("properties")]
         public List<HubSpotPropertyUpdateModel> Properties { get; set; }
 
+        [JsonProperty("email")]
         public string Email { get; set; }
 
         public HubSpotUpdateContactModel()

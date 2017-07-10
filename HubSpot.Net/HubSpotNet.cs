@@ -239,6 +239,27 @@ namespace HubSpot.Net
                 return contactList;
             }
         }
+        
+        public async Task<HubSpotContactModel> GetContact(string apiKey, string email)
+        {
+            var uri = new UriBuilder(string.Format(HubSpotBaseUrl + "contacts/v1/contact/email/{0}/profile?hapikey={1}", email, apiKey));
+
+            using (var client = new HttpClient())
+            {
+                var response = await client.GetAsync(uri.Uri);
+                var result = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HubSpotException(response.StatusCode,
+                        $"HubSpotNet error contact creation: {response.ReasonPhrase}");
+                }
+
+                var contactModel = JsonConvert.DeserializeObject<HubSpotContactModel>(result);
+
+                return contactModel;
+            }            
+        }
 
         public async Task UpdateContact(string apiKey, HubSpotUpdateContactModel model, string[] param)
         {
@@ -278,6 +299,41 @@ namespace HubSpot.Net
             }
 
             throw new NotImplementedException();
-        }        
+        }
+
+        public async Task BatchUpdateContactsByEmail(string apiKey, List<HubSpotUpdateContactModel> model)
+        {
+            var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/contact/batch/?hapikey=" + apiKey);
+
+            var content = new StringContent(JsonConvert.SerializeObject(model.ToArray(), Formatting.None, new JsonSerializerSettings
+            { NullValueHandling = NullValueHandling.Ignore }), Encoding.UTF8, "application/json");
+
+            using(var client = new HttpClient())
+            {
+                var response = await client.PostAsync(uri.Uri, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HubSpotException(response.StatusCode,
+                        $"HubSpotNet error during contacts batch update: {response.ReasonPhrase}");
+                }
+            }
+        }
+
+        public async Task DeleteContact(string apiKey, string vid)
+        {            
+            var uri = new UriBuilder(string.Format(HubSpotBaseUrl + "contacts/v1/contact/{0}/?hapikey={1}", vid, apiKey));
+
+            using (var client = new HttpClient())
+            {
+                var response = await client.DeleteAsync(uri.Uri);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HubSpotException(response.StatusCode,
+                        $"HubSpotNet error during deal creation: {response.ReasonPhrase}");
+                }
+            }
+        }
     }
 }
