@@ -141,7 +141,7 @@ namespace HubSpot.Net
         public async Task<List<HubSpotContactModel>> GetRecentContacts(string apiKey, DateTime timeOffset, List<string> properties = null)
         {
             // add an array of query string params that can be iterated through            
-            var uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey + "&propertyMode=value_and_history");
+            var uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey + "&count=100&propertyMode=value_and_history");
 
             if(properties != null && properties.Any())
             {
@@ -155,9 +155,22 @@ namespace HubSpot.Net
                 var responseTimeOffset = DateTime.MaxValue;
                 var uriOriginalString = uri.Uri.ToString();
                 var uriString = uriOriginalString;
+                var firstPass = true;
 
-                while (!string.IsNullOrEmpty(uriString))
+                while (firstPass || contactsModel.HasMore)
                 {
+                    // append time and vid offset if not the first pass
+                    if (!firstPass)
+                    {
+                        uri = new UriBuilder(HubSpotBaseUrl + "/contacts/v1/lists/recently_updated/contacts/recent?hapikey=" + apiKey + "&count=100&propertyMode=value_and_history"
+                            + string.Format("&vidOffset={0}&timeOffset={1}", contactsModel.VidOffset, contactsModel.TimeOffSet));
+
+                        if (properties != null && properties.Any())
+                        {
+                            uri.Query = uri.Query.Substring(1) + "&property=" + string.Join("&property=", properties);
+                        }
+                    }
+
                     var response = await client.GetAsync(uri.Uri);
                     var result = await response.Content.ReadAsStringAsync();
                     
@@ -178,7 +191,10 @@ namespace HubSpot.Net
                         uriString = uriOriginalString + "&vidOffset=" + contactsModel.VidOffset + "&timeOffset=" + contactsModel.TimeOffSet.ToString();
                     }
                     else                    
-                        uriString = string.Empty;                   
+                        uriString = string.Empty;
+
+                    if (firstPass)
+                        firstPass = false;
                 }
 
                 return contactList;
@@ -304,6 +320,8 @@ namespace HubSpot.Net
         public async Task BatchUpdateContactsByEmail(string apiKey, List<HubSpotUpdateContactModel> model)
         {
             var uri = new UriBuilder(HubSpotBaseUrl + "contacts/v1/contact/batch/?hapikey=" + apiKey);
+            
+            var modelArray = model.ToArray();
 
             var content = new StringContent(JsonConvert.SerializeObject(model.ToArray(), Formatting.None, new JsonSerializerSettings
             { NullValueHandling = NullValueHandling.Ignore }), Encoding.UTF8, "application/json");
