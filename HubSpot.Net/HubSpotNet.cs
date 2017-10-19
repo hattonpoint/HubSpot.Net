@@ -175,9 +175,22 @@ namespace HubSpot.Net
                     var result = await response.Content.ReadAsStringAsync();
                     
                     contactsModel = JsonConvert.DeserializeObject<HubSpotContactsModel>(result);
-                    
-                    contactList.AddRange(contactsModel.Contacts.Where(c => Helpers.ConvertFromUnixTime(c.AddedAt) >= timeOffset));//check contact timestamp against lastSyncDate
 
+                    foreach (var contact in contactsModel.Contacts)
+                    {
+                        var convertedDate = Helpers.ConvertFromUnixTime(contact.AddedAt);
+
+                        if (convertedDate > timeOffset)
+                        {
+                            contactList.Add(contact);
+                        }
+                        else
+                        {
+                            contactsModel.HasMore = false;
+                            break;
+                        }
+                    }
+                    
                     contactsModel.StatusCode = response.StatusCode;
                     if (!response.IsSuccessStatusCode)
                     {
