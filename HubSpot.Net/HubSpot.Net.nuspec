@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>HattonPoint.Hubspot.Net</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>Hatton Point</authors>
+    <owners>Hatton Point</owners>
+    <licenseUrl>https://raw.githubusercontent.com/hattonpoint/HubSpot.Net/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/hattonpoint/HubSpot.Net/tree/master</projectUrl>    
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>.NET integration with the Hubspot API</description>
+    <releaseNotes>Initial publish of package</releaseNotes>
+    <copyright>Copyright 2017</copyright>
+    <tags>hubspot</tags>
+  </metadata>
+</package>
