@@ -40,6 +40,10 @@ TestResult.xml
 [Rr]eleasePS/
 dlldata.c
 
+# Nuget
+*.nuget.props
+*.nuget.targets
+
 # DNX
 project.lock.json
 artifacts/
